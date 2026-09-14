@@ -68,8 +68,7 @@ Each phase also works standalone, if you'd rather read and edit the artifacts be
 
 ## Install
 
-pr-fix is free to use, but only with permission — see [License](#license). Once your request is
-approved, install it for every project:
+Install it for every project:
 
 ```bash
 git clone https://github.com/EgeCankaya/pr-fix.git ~/.claude/skills/pr-fix
@@ -143,7 +142,8 @@ you install, and as a reference for what "good" looks like.
 
 ## License
 
-pr-fix is source-available, not open source. You can read the code here, but using, copying,
-modifying, or redistributing it requires permission first. Permission is free: open an issue at
-[github.com/EgeCankaya/pr-fix/issues](https://github.com/EgeCankaya/pr-fix/issues) saying who you
-are and how you plan to use it. The full terms are in [LICENSE](LICENSE).
+[MIT](LICENSE). Use it, fork it, change it, ship it — commercially or otherwise. Keep the copyright
+notice and you're done.
+
+Issues and pull requests are welcome at
+[github.com/EgeCankaya/pr-fix](https://github.com/EgeCankaya/pr-fix).
