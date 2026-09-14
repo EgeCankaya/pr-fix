@@ -1,0 +1,372 @@
+{
+  "schema_version": 1,
+  "context": {
+    "pr_number": 42,
+    "repo": "acme/ingest-service",
+    "url": "https://github.com/acme/ingest-service/pull/42",
+    "title": "Add retry backoff to the ingest client",
+    "base_branch": "main",
+    "head_branch": "feature/retry-backoff",
+    "head_sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+    "state": "OPEN",
+    "review_decision": "CHANGES_REQUESTED"
+  },
+  "github": {
+    "access_path": "gh",
+    "review_history_available": true,
+    "fetch_gaps": []
+  },
+  "config": {
+    "min_severity": "medium",
+    "include_own_findings": true,
+    "skip_categories": [],
+    "max_retry_attempts": 3,
+    "full_read_file_budget": 25
+  },
+  "phases": {
+    "report": {
+      "status": "complete",
+      "at": "2026-09-14T10:02:11Z",
+      "head_sha_seen": "a1b2c3d4",
+      "mode": "subagent"
+    },
+    "plan": {
+      "status": "complete",
+      "at": "2026-09-14T10:19:47Z",
+      "head_sha_seen": "a1b2c3d4",
+      "mode": "interactive"
+    },
+    "review-plan": {
+      "status": "complete",
+      "at": "2026-09-14T10:41:03Z",
+      "head_sha_seen": "a1b2c3d4",
+      "mode": "subagent"
+    },
+    "implement": {
+      "status": "complete",
+      "at": "2026-09-14T11:08:22Z",
+      "head_sha_seen": "a1b2c3d4",
+      "mode": "interactive"
+    },
+    "review-impl": {
+      "status": "complete",
+      "at": "2026-09-14T11:31:56Z",
+      "head_sha_seen": "a1b2c3d4",
+      "mode": "subagent"
+    },
+    "respond": {
+      "status": "pending"
+    }
+  },
+  "baseline_sha": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+  "findings": [
+    {
+      "id": "F-01",
+      "title": "Backoff exponent is unbounded",
+      "file": "src/ingest/client.py",
+      "lines": "42-55",
+      "severity": "High",
+      "category": "Bug",
+      "confidence": "High",
+      "source": "review",
+      "status": "open"
+    },
+    {
+      "id": "F-02",
+      "title": "Retry loop swallows non-retryable 4xx responses",
+      "file": "src/ingest/client.py",
+      "lines": "58-71",
+      "severity": "High",
+      "category": "Bug",
+      "confidence": "High",
+      "source": "review",
+      "status": "open"
+    },
+    {
+      "id": "F-03",
+      "title": "No jitter on the backoff interval",
+      "file": "src/ingest/client.py",
+      "lines": "42-55",
+      "severity": "Medium",
+      "category": "Performance",
+      "confidence": "Medium",
+      "source": "analysis",
+      "status": "open"
+    },
+    {
+      "id": "F-04",
+      "title": "_should_retry nests four levels deep",
+      "file": "src/ingest/client.py",
+      "lines": "74-96",
+      "severity": "Medium",
+      "category": "Code quality",
+      "confidence": "High",
+      "source": "review",
+      "status": "open"
+    },
+    {
+      "id": "F-05",
+      "title": "No test covers the retry ceiling",
+      "file": "tests/test_client.py",
+      "lines": "\u2014",
+      "severity": "Medium",
+      "category": "Test gap",
+      "confidence": "High",
+      "source": "analysis",
+      "status": "open"
+    },
+    {
+      "id": "F-06",
+      "title": "Magic number 30 for the cap",
+      "file": "src/ingest/client.py",
+      "lines": "49",
+      "severity": "Low",
+      "category": "Code quality",
+      "confidence": "High",
+      "source": "analysis",
+      "status": "open"
+    },
+    {
+      "id": "F-07",
+      "title": "retry_with_backoff has no docstring",
+      "file": "src/ingest/client.py",
+      "lines": "40",
+      "severity": "Info",
+      "category": "Convention",
+      "confidence": "High",
+      "source": "analysis",
+      "status": "open"
+    }
+  ],
+  "blocking_coverage": [
+    {
+      "review_id": 2481003,
+      "reviewer": "@dana",
+      "point": "The retry ceiling is unbounded \u2014 this will overflow on a long outage",
+      "finding_ids": [
+        "F-01"
+      ],
+      "disposition": "fix"
+    },
+    {
+      "review_id": 2481003,
+      "reviewer": "@dana",
+      "point": "A 400 gets retried the same as a 503; only 5xx and 429 should retry",
+      "finding_ids": [
+        "F-02"
+      ],
+      "disposition": "fix"
+    },
+    {
+      "review_id": 2481188,
+      "reviewer": "codescene[bot]",
+      "point": "Complexity regression in _should_retry (nesting depth 4, threshold 3)",
+      "finding_ids": [
+        "F-04"
+      ],
+      "disposition": "fix"
+    }
+  ],
+  "fixes": [
+    {
+      "id": "FIX-01",
+      "addresses": [
+        "F-01",
+        "F-06"
+      ],
+      "title": "Clamp the backoff exponent to MAX_BACKOFF_SECONDS",
+      "file": "src/ingest/client.py",
+      "severity": "High",
+      "depends_on": [],
+      "review_verdict": "approve",
+      "review_note": "",
+      "applied": "applied",
+      "patch": "patches/fix-01.patch",
+      "impl_verdict": "good",
+      "action_taken": "kept"
+    },
+    {
+      "id": "FIX-02",
+      "addresses": [
+        "F-02"
+      ],
+      "title": "Retry only on 5xx and 429",
+      "file": "src/ingest/client.py",
+      "severity": "High",
+      "depends_on": [],
+      "review_verdict": "revise",
+      "review_note": "Original caught bare Exception, which would swallow KeyboardInterrupt. Narrowed to HTTPError.",
+      "applied": "applied",
+      "patch": "patches/fix-02.patch",
+      "impl_verdict": "needs-work",
+      "action_taken": "flagged for iteration"
+    },
+    {
+      "id": "FIX-03",
+      "addresses": [
+        "F-03"
+      ],
+      "title": "Add full jitter to the backoff interval",
+      "file": "src/ingest/client.py",
+      "severity": "Medium",
+      "depends_on": [
+        "FIX-01"
+      ],
+      "review_verdict": "approve",
+      "review_note": "",
+      "applied": "applied",
+      "patch": "patches/fix-03.patch",
+      "impl_verdict": "good",
+      "action_taken": "kept"
+    },
+    {
+      "id": "FIX-04",
+      "addresses": [
+        "F-04"
+      ],
+      "title": "Flatten _should_retry with early returns",
+      "file": "src/ingest/client.py",
+      "severity": "Medium",
+      "depends_on": [
+        "FIX-02"
+      ],
+      "review_verdict": "approve",
+      "review_note": "Blocking (codescene[bot]); planned regardless of severity.",
+      "applied": "applied",
+      "patch": "patches/fix-04.patch",
+      "impl_verdict": "good",
+      "action_taken": "kept"
+    },
+    {
+      "id": "FIX-05",
+      "addresses": [
+        "F-05"
+      ],
+      "title": "Parametrized test for the ceiling and the 4xx path",
+      "file": "tests/test_client.py",
+      "severity": "Medium",
+      "depends_on": [
+        "FIX-01",
+        "FIX-02"
+      ],
+      "review_verdict": "approve",
+      "review_note": "",
+      "applied": "applied",
+      "patch": "patches/fix-05.patch",
+      "impl_verdict": "good",
+      "action_taken": "kept"
+    },
+    {
+      "id": "FIX-06",
+      "addresses": [
+        "F-07"
+      ],
+      "title": "Add a docstring to retry_with_backoff",
+      "file": "src/ingest/client.py",
+      "severity": "Info",
+      "depends_on": [],
+      "review_verdict": "reject",
+      "review_note": "False positive \u2014 the function is private to the module and the module docstring covers it. Not worth a diff line in a PR under review.",
+      "applied": "skipped",
+      "patch": null,
+      "impl_verdict": null,
+      "action_taken": "not applied"
+    }
+  ],
+  "skips": [
+    {
+      "finding_id": "F-07",
+      "reason": "Covered by the module docstring",
+      "decision": "keep-skipped",
+      "ratified_by_user": true
+    }
+  ],
+  "pending_decisions": [
+    {
+      "id": "PD-01",
+      "phase": "review-plan",
+      "question": "F-07 (docstring) was planned as FIX-06 but the review judged it a false positive \u2014 the module docstring covers it. Keep it skipped?",
+      "options": [
+        "Keep skipped",
+        "Include as an approved fix"
+      ],
+      "defaulted_to": "Keep skipped",
+      "resolved_by_user": true,
+      "resolution": "Keep skipped \u2014 user agreed; Info-level and already documented at module level"
+    },
+    {
+      "id": "PD-02",
+      "phase": "review-impl",
+      "question": "FIX-02's exception clause is wider than approved. Revert it, or keep and iterate?",
+      "options": [
+        "Keep and iterate on FIX-02",
+        "Revert FIX-02"
+      ],
+      "defaulted_to": "Keep and iterate on FIX-02",
+      "resolved_by_user": true,
+      "resolution": "Keep and iterate \u2014 the 400 path is correct, only the clause needs narrowing"
+    }
+  ],
+  "gates": {
+    "resolved_from": "ci+instructions+config",
+    "baseline": [
+      {
+        "gate": "tests",
+        "command": "make test",
+        "result": "pass",
+        "signature": null
+      },
+      {
+        "gate": "lint",
+        "command": "ruff check src tests",
+        "result": "pass",
+        "signature": null
+      },
+      {
+        "gate": "types",
+        "command": "mypy src",
+        "result": "fail",
+        "signature": "src/legacy_shim.py:88 assignment"
+      }
+    ],
+    "implement": {
+      "attempts": [
+        {
+          "n": 1,
+          "failing": [
+            "tests"
+          ],
+          "signature": "tests/test_client.py::test_ceiling AssertionError",
+          "action": "FIX-03's jitter made the ceiling assertion non-deterministic; seeded the RNG in the test"
+        },
+        {
+          "n": 2,
+          "failing": [],
+          "signature": null,
+          "action": null
+        }
+      ],
+      "final": "PASSED"
+    },
+    "review": [
+      {
+        "gate": "tests",
+        "command": "make test",
+        "result": "pass",
+        "signature": null
+      },
+      {
+        "gate": "lint",
+        "command": "ruff check src tests",
+        "result": "pass",
+        "signature": null
+      },
+      {
+        "gate": "types",
+        "command": "mypy src",
+        "result": "fail",
+        "signature": "src/legacy_shim.py:88 assignment"
+      }
+    ]
+  }
+}
