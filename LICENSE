@@ -1,0 +1,34 @@
+pr-fix Permission-Required License
+
+Copyright (c) 2026 Egemen Cankaya. All rights reserved.
+
+This software is source-available, not open source. It is published so people
+can read it; using it requires the copyright holder's permission, which is free
+when granted.
+
+1. Without permission, you may view the source code on GitHub. GitHub's Terms
+   of Service grant GitHub users certain rights over public repositories, such
+   as viewing and forking them on GitHub; this license does not limit those.
+
+2. Only with prior written permission may you use, run, install, copy, modify,
+   merge, publish, distribute, sublicense, or include in another work this
+   software or any part of it, for any purpose, personal or commercial.
+
+3. To request permission, open an issue at
+   https://github.com/EgeCankaya/pr-fix/issues saying who you are and how you
+   intend to use the software.
+
+4. Permission is free of charge. It is granted in writing (a reply on your
+   issue is enough), covers only the person or organization and the use named
+   in the grant, and may not be transferred. The copyright holder may decline
+   any request.
+
+5. Unless a grant says otherwise, any copy or derivative of this software must
+   keep this copyright notice and license.
+
+6. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+   WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+   IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

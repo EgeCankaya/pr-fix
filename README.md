@@ -41,7 +41,8 @@ Phase 1 (report)  →  Phase 2 (plan)  →  Phase 3 (review-plan)  →  Phase 4 
 
 ## Install
 
-For every project:
+pr-fix is free to use, but only with permission — see [License](#license). Once your request is
+approved, install it for every project:
 
 ```bash
 git clone https://github.com/EgeCankaya/pr-fix.git ~/.claude/skills/pr-fix
@@ -79,3 +80,10 @@ npm run typecheck
 CodeScene's delta check fails any changed file scoring below 10.0. Watch for duplicated test
 blocks and conditionals nested more than two deep.
 ````
+
+## License
+
+pr-fix is source-available, not open source. You can read the code here, but using, copying,
+modifying, or redistributing it requires permission first. Permission is free: open an issue at
+[github.com/EgeCankaya/pr-fix/issues](https://github.com/EgeCankaya/pr-fix/issues) saying who you
+are and how you plan to use it. The full terms are in [LICENSE](LICENSE).
