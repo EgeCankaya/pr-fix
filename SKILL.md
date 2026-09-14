@@ -1,35 +1,55 @@
 ---
 name: pr-fix
-description: Multi-phase PR review-to-fix pipeline with fresh-chat isolation. USE WHEN "pr-fix", "fix PR", "review and fix PR", "PR report", "PR plan", "implement fixes", "review implementation".
+description: Multi-phase PR review-to-fix pipeline with fresh-context isolation between phases. USE WHEN "pr-fix", "fix PR", "review and fix PR", "PR report", "PR plan", "implement fixes", "review implementation", "address review comments", "clear a changes-requested review".
 ---
 
 # PRFix
 
-A five-phase pipeline that reviews a GitHub pull request, plans fixes, and implements them — with human checkpoints and fresh-chat isolation between phases. The file system (`.pr-fix/` directory) acts as the message bus between chat sessions. Requires `git` and an authenticated `gh` CLI.
+A pipeline that reviews a GitHub pull request, plans fixes, implements them, and reports back to
+the reviewers — with human checkpoints and fresh-context isolation between phases.
+`.pr-fix/` acts as the message bus. Requires `git` and a way to reach GitHub (see § Requirements).
 
-## Pipeline Overview
+## Two ways to run it
+
+**Orchestrated** — one session drives everything, spawning subagents where fresh eyes matter:
 
 ```
-Phase 1 (report)  →  Phase 2 (plan)  →  Phase 3 (review-plan)  →  Phase 4 (implement)  →  Phase 5 (review-impl)
-   Fresh Chat A        Fresh Chat B          Fresh Chat C            Chat B (resumed)         Fresh Chat D
+/pr-fix run #9
 ```
 
-- **Phases 1, 3, 5** run in **fresh** Claude Code chats for independent analysis
-- **Phases 2 and 4** share the **same** chat so the planner retains context when implementing
-- Every phase ends with a **ready-to-paste handoff prompt** for the next one: the command plus a ~10-sentence brief carrying what that chat knows and the `.pr-fix/` files don't (user decisions, doubts, couplings). See `Workflows/_handoff.md`.
+**Step by step** — each phase is its own command, so you can read and edit the artifacts between
+phases:
 
-## Workflow Routing
+```
+Phase 1 (report) → Phase 2 (plan) → Phase 3 (review-plan) → Phase 4 (implement) → Phase 5 (review-impl) → Phase 6 (respond)
+  fresh context     your chat         fresh context           your chat             fresh context          your chat
+```
 
-Parse the first word of `$ARGUMENTS` and execute the matching workflow file. For every subcommand except `report`, any text after the first word is an optional **handoff brief** from the previous phase — the workflow reads it per `Workflows/_handoff.md` § Receiving a brief.
+- **Phases 1, 3, 5** run with **fresh context** — a subagent under `run`, or a fresh chat in manual
+  mode. A reviewer carrying the author's reasoning can't independently catch the author's mistakes.
+- **Phases 2, 4, 6** run in **one retained session**, so the planner implements its own plan.
+- In manual mode every phase ends with a **ready-to-paste handoff prompt**: the next command plus a
+  ~10-sentence brief carrying what that session knows and the `.pr-fix/` files don't — user
+  decisions, doubts, couplings. See `references/_handoff.md`.
+
+## Workflow routing
+
+Parse the first word of `$ARGUMENTS` and execute the matching workflow file. Trailing
+`--key=value` flags are config overrides (`references/_config.md`). For every subcommand except
+`report` and `run`, remaining text is an optional **handoff brief** — read it per
+`references/_handoff.md` § Receiving a brief.
 
 | Argument | Workflow | Phase | Description |
 |----------|----------|-------|-------------|
-| `report` | `Workflows/Report.md` | 1 | Analyze PR history + diff → thorough issue report with suggestions |
-| `plan` | `Workflows/Plan.md` | 2 | Read report → concrete fix plan |
-| `review-plan` | `Workflows/ReviewPlan.md` | 3 | Fresh-eyes cross-check of the plan |
-| `implement` | `Workflows/Implement.md` | 4 | Apply approved fixes → run the project's checks |
-| `review-impl` | `Workflows/ReviewImpl.md` | 5 | Fresh-eyes review of implementation |
-| `clean` | `Workflows/Clean.md` | — | Wipe `.pr-fix/` to start fresh |
+| `run` | `references/run.md` | 1–5 | Drive the whole pipeline from this session, with subagents for 1/3/5 |
+| `report` | `references/report.md` | 1 | Analyze PR history + diff → advisory issue report |
+| `plan` | `references/plan.md` | 2 | Read report → concrete fix plan |
+| `review-plan` | `references/review-plan.md` | 3 | Fresh-eyes cross-check of the plan |
+| `implement` | `references/implement.md` | 4 | Apply approved fixes → run the project's checks |
+| `review-impl` | `references/review-impl.md` | 5 | Fresh-eyes review of the implementation |
+| `respond` | `references/respond.md` | 6 | Draft the commit message + reviewer reply (optional) |
+| `status` | `references/status.md` | — | Where the pipeline stands and what to run next (read-only) |
+| `clean` | `references/clean.md` | — | Wipe `.pr-fix/` to start fresh |
 
 If `$ARGUMENTS` is empty or unrecognized, show this help:
 
@@ -37,76 +57,97 @@ If `$ARGUMENTS` is empty or unrecognized, show this help:
 /pr-fix — Multi-phase PR review-to-fix pipeline
 
 Usage:
-  /pr-fix report [#PR or URL]   — Phase 1: Generate issue report (fresh chat)
-  /pr-fix plan [brief]          — Phase 2: Create fix plan (fresh chat)
-  /pr-fix review-plan [brief]   — Phase 3: Review the plan (fresh chat)
-  /pr-fix implement [brief]     — Phase 4: Implement fixes (same chat as Phase 2)
-  /pr-fix review-impl [brief]   — Phase 5: Review implementation (fresh chat)
-  /pr-fix clean                 — Wipe .pr-fix/ to start a fresh pipeline run
+  /pr-fix run #PR          — Drive all five phases from this session (recommended)
 
-Handoff files are stored in .pr-fix/ (Phase 1 keeps it out of git).
-Run phases in order. Phases 1, 3, 5 should each be a fresh chat.
-Phases 2 and 4 should share the same chat session.
-Each phase ends with a ready-to-paste prompt for the next one (command + brief).
+  /pr-fix report #PR       — Phase 1: issue report            (fresh chat)
+  /pr-fix plan [brief]     — Phase 2: fix plan                (keep this chat)
+  /pr-fix review-plan …    — Phase 3: review the plan         (fresh chat)
+  /pr-fix implement …      — Phase 4: apply fixes + checks    (Phase 2 chat)
+  /pr-fix review-impl …    — Phase 5: review the diff         (fresh chat)
+  /pr-fix respond [brief]  — Phase 6: commit msg + PR reply   (optional)
 
-Note: Phase 1 auto-detects stale artifacts and prompts before overwriting.
-      Use /pr-fix clean to manually wipe state between pipeline runs.
+  /pr-fix status           — Where am I, and what runs next?
+  /pr-fix clean            — Wipe .pr-fix/ and start over
+
+Flags (any subcommand): --min-severity=high --skip-categories=performance
+                        --include-own-findings=false --auto-checkpoints=false
+
+Nothing is ever committed or pushed for you.
 ```
 
-## Handoff Files
+## Handoff files
 
-All phases communicate through `.pr-fix/` in the repo root:
+All phases communicate through `.pr-fix/` in the repo root (Phase 1 keeps it out of git):
 
 | File | Written by | Read by | Content |
 |------|-----------|---------|---------|
-| `context.json` | Phase 1 | All | PR number, repo, branches, **`head_sha`** (staleness anchor) |
-| `report.md` | Phase 1 | Phase 2, 3 | Thorough issue report with suggestions |
-| `plan.md` | Phase 2 | Phase 3 | Concrete fix plan |
-| `plan-approved.md` | Phase 3 | Phase 4 | Approved/revised fixes |
-| `baseline_sha.txt` | Phase 4 | Phase 4, 5 | Pre-implementation commit SHA — all fix diffs/reverts are computed against it |
-| `changes.md` | Phase 4 | Phase 5 | Implementation summary |
-| `verdict.md` | Phase 5 | User | Final verdict |
+| `state.json` | All | All | The machine-readable state: context, findings, blocking coverage, fixes, gates. See `references/_schema.md` |
+| `report.md` | Phase 1 | 2, 3 | Advisory issue report |
+| `plan.md` | Phase 2 | 3 | Concrete fix plan |
+| `verify-resolved.md` | Phase 2 | 4, 5 | The resolved verification suite |
+| `plan-approved.md` | Phase 3 | 4, 5 | Approved/revised fixes |
+| `changes.md` | Phase 4 | 5 | Implementation summary, carrying PASSED/FAILED |
+| `patches/fix-NN.patch` | Phase 4 | 5 | One incremental patch per fix, so a single fix can be reverted |
+| `verdict.md` | Phase 5 | 6, user | Final verdict |
+| `response.md` | Phase 6 | user | Draft commit message + PR comment |
 
-`Workflows/_verify.md` is the shared verification procedure that Phases 2, 4, and 5 reference
-instead of duplicating commands. It finds the target project's own checks (a
-`.claude/pr-fix/verify.md` override, or else CI, project instructions, and tool config) and sorts
-them into auto-fixers, gates, and PR-only code-health gates.
+## Shared references
 
-`Workflows/_handoff.md` is the shared contract for the handoff prompt every phase ends with —
-format, length, what goes in, and how the receiving phase reads it.
+Five files hold the cross-cutting contracts, so the phase workflows reference them instead of
+restating (and drifting from) the rules:
+
+| File | What it governs |
+|------|-----------------|
+| `references/_github.md` | How to reach GitHub: `gh`, MCP tools, or degraded `git-only`. Every phase resolves this first — **never hardcode `gh`** |
+| `references/_verify.md` | How the project's own checks are found, persisted, and run; failure signatures; the pre-implementation baseline |
+| `references/_staleness.md` | The PR-moved check every phase runs before doing anything |
+| `references/_schema.md` | The `state.json` schema and how to update it safely |
+| `references/_handoff.md` | The handoff brief: format, content, and how it's delivered to a chat or a subagent |
+| `references/_config.md` | Run configuration: severity floor, category skips, budgets, and the repo override file |
+
+## Guarantees
+
+- **Every blocking-review point is covered.** Phase 1 decomposes each open `CHANGES_REQUESTED`
+  review — human or bot, no privileged reviewer names — into its distinct points and maps each to a
+  finding. Phase 2 plans one for each; Phase 3 re-derives the map from the live reviews rather than
+  trusting it. A point may only be skipped as *already-resolved* or *false-positive*, never on
+  severity grounds — that's the thing keeping the review from clearing.
+- **Pre-existing failures are a fact, not a judgment.** Phase 4 runs the gates once before touching
+  anything, so "that was already broken" is a set difference both it and Phase 5 can compute.
+- **A single fix can be reverted.** Each fix gets its own patch, so Phase 5 reverses one with
+  `git apply -R` instead of hand-editing a file.
+- **Nothing is committed or pushed.** Phase 6 drafts; the user decides.
 
 ## Examples
 
-**Example 1: Start the pipeline on a PR**
+**Orchestrated, the common case**
 ```
-User: /pr-fix report #9
-→ Fetches PR #9 history and diff
-→ Writes .pr-fix/report.md with findings and suggestions
-→ Prints a "/pr-fix plan <brief>" prompt to paste into a fresh chat
-```
-
-**Example 2: Generate the fix plan**
-```
-User: /pr-fix plan <brief>
-→ Reads the brief, then .pr-fix/report.md
-→ Proposes concrete fixes for Medium+ findings
-→ Writes .pr-fix/plan.md
-→ Prints a "/pr-fix review-plan <brief>" prompt for a fresh chat; come back here for implement
+User: /pr-fix run #9
+→ Subagent writes .pr-fix/report.md; relays findings and blocking coverage
+→ Checkpoint: confirm scope
+→ Plans fixes in this session
+→ Subagent cross-checks the plan against the real code
+→ Checkpoint: approve the fix set (never skipped — last stop before editing)
+→ Applies fixes here, runs the project's checks, stops on no-progress
+→ Subagent audits the diff and re-runs the gates independently
+→ Checkpoint: keep or revert
+→ Offers /pr-fix respond
 ```
 
-**Example 3: Review and implement**
+**Step by step**
 ```
-User: /pr-fix review-plan <brief>    (in fresh Chat C)
-→ Cross-checks plan against actual code
-→ Writes .pr-fix/plan-approved.md
-→ Prints a "/pr-fix implement <brief>" prompt to paste back in Chat B
-
-User: /pr-fix implement <brief>      (back in Chat B)
-→ Applies approved fixes, runs the project's checks
-→ Writes .pr-fix/changes.md
-→ Prints a "/pr-fix review-impl <brief>" prompt for a fresh chat
-
-User: /pr-fix review-impl <brief>    (in fresh Chat D)
-→ Independent review of implementation
-→ Writes .pr-fix/verdict.md
+User: /pr-fix report #9            → writes report.md, prints a plan prompt
+User: /pr-fix plan <brief>         → writes plan.md, prints a review-plan prompt
+User: /pr-fix review-plan <brief>  (fresh chat) → writes plan-approved.md
+User: /pr-fix implement <brief>    (back in the planning chat) → writes changes.md
+User: /pr-fix review-impl <brief>  (fresh chat) → writes verdict.md
 ```
+
+**Coming back to a half-finished run**
+```
+User: /pr-fix status
+→ PR #9, phases 1–3 complete, tree clean and on the PR head, PR unchanged
+→ ▶ Next: /pr-fix implement — run it in your Phase 2 chat
+```
+
+A complete worked run — real report, plan, verdict and `state.json` — is in `examples/`.
