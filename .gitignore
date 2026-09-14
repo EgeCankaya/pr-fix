@@ -1,0 +1,4 @@
+# State files that Claude Code hooks drop into whatever directory a session works in
+.claude/
+# The pipeline's message bus, if the skill is ever run against this repo
+.pr-fix/
